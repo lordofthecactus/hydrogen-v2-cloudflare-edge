@@ -8,6 +8,7 @@ import {
   NotFoundError,
   getAssetFromKV,
 } from "@cloudflare/kv-asset-handler";
+import { createStorefrontClient } from "@shopify/hydrogen";
 
 type RequestHandler = (event: FetchEvent) => Promise<Response>;
 
@@ -25,13 +26,36 @@ function createEventHandler({
   getLoadContext?: GetLoadContextFunction;
   mode?: string;
 }) {
-  let handleRequest = createRequestHandler({
-    build,
-    getLoadContext,
-    mode,
-  });
-
   let handleEvent = async (event: FetchEvent) => {
+    const waitUntil = (p: Promise<any>) => event.waitUntil(p);
+    const env = {
+      PUBLIC_STOREFRONT_API_TOKEN,
+      PUBLIC_STORE_DOMAIN,
+      PUBLIC_STOREFRONT_API_VERSION,
+    };
+
+    /**
+     * Create Hydrogen's Storefront client.
+     */
+    const { storefront } = createStorefrontClient({
+      // cache,
+      waitUntil,
+      // buyerIp: getBuyerIp(request),
+      i18n: { language: "EN", country: "US" },
+      publicStorefrontToken: env.PUBLIC_STOREFRONT_API_TOKEN,
+      // privateStorefrontToken: PRIVATE_STOREFRONT_API_TOKEN,
+      storeDomain: `https://${env.PUBLIC_STORE_DOMAIN}`,
+      storefrontApiVersion: env.PUBLIC_STOREFRONT_API_VERSION || "2023-01",
+      // storefrontId: PUBLIC_STOREFRONT_ID,
+      requestGroupId: event.request.headers.get("request-id"),
+    });
+
+    let handleRequest = createRequestHandler({
+      build,
+      getLoadContext: () => ({ storefront }),
+      mode,
+    });
+
     let response = await handleAsset(event, build);
 
     if (!response) {
