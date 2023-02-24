@@ -1,7 +1,11 @@
 import * as build from "@remix-run/dev/server-build";
-import type { ServerBuild } from "@remix-run/cloudflare";
+import { createCookieSessionStorage, ServerBuild } from "@remix-run/cloudflare";
 import type { GetLoadContextFunction } from "@remix-run/cloudflare-workers";
-import { createRequestHandler as createRemixRequestHandler } from "@remix-run/server-runtime";
+import {
+  createRequestHandler as createRemixRequestHandler,
+  Session,
+  SessionStorage,
+} from "@remix-run/server-runtime";
 import type { Options as KvAssetHandlerOptions } from "@cloudflare/kv-asset-handler";
 import {
   MethodNotAllowedError,
@@ -28,12 +32,29 @@ function createEventHandler({
   mode?: string;
 }) {
   let handleEvent = async (event: FetchEvent) => {
+    /**
+     * Open a cache instance in the worker and a custom session instance.
+     */
+    if (!SESSION_SECRET) {
+      throw new Error("SESSION_SECRET environment variable is not set");
+    }
+
     const waitUntil = (p: Promise<any>) => event.waitUntil(p);
     const env = {
       PUBLIC_STOREFRONT_API_TOKEN,
+      PRIVATE_STOREFRONT_API_TOKEN:
+        typeof PRIVATE_STOREFRONT_API_TOKEN !== "undefined"
+          ? PRIVATE_STOREFRONT_API_TOKEN
+          : undefined,
       PUBLIC_STORE_DOMAIN,
       PUBLIC_STOREFRONT_API_VERSION,
+      SESSION_SECRET,
     };
+
+    const [cache, session] = await Promise.all([
+      caches.open("hydrogen"),
+      HydrogenSession.init(event.request, [SESSION_SECRET]),
+    ]);
 
     /**
      * Create Hydrogen's Storefront client.
@@ -44,7 +65,7 @@ function createEventHandler({
       buyerIp: getBuyerIp(event.request),
       i18n: { language: "EN", country: "US" },
       publicStorefrontToken: env.PUBLIC_STOREFRONT_API_TOKEN,
-      // privateStorefrontToken: PRIVATE_STOREFRONT_API_TOKEN,
+      privateStorefrontToken: env.PRIVATE_STOREFRONT_API_TOKEN,
       storeDomain: `https://${env.PUBLIC_STORE_DOMAIN}`,
       storefrontApiVersion: env.PUBLIC_STOREFRONT_API_VERSION || "2023-01",
       // storefrontId: PUBLIC_STOREFRONT_ID,
@@ -53,7 +74,7 @@ function createEventHandler({
 
     let handleRequest = createRequestHandler({
       build,
-      getLoadContext: () => ({ storefront }),
+      getLoadContext: () => ({ session, cache, storefront }),
       mode,
     });
 
@@ -152,5 +173,57 @@ async function handleAsset(
     }
 
     throw error;
+  }
+}
+
+/**
+ * This is a custom session implementation for your Hydrogen shop.
+ * Feel free to customize it to your needs, add helper methods, or
+ * swap out the cookie-based implementation with something else!
+ */
+class HydrogenSession {
+  constructor(
+    private sessionStorage: SessionStorage,
+    private session: Session
+  ) {}
+
+  static async init(request: Request, secrets: string[]) {
+    const storage = createCookieSessionStorage({
+      cookie: {
+        name: "session",
+        httpOnly: true,
+        path: "/",
+        sameSite: "lax",
+        secrets,
+      },
+    });
+
+    const session = await storage.getSession(request.headers.get("Cookie"));
+
+    return new this(storage, session);
+  }
+
+  get(key: string) {
+    return this.session.get(key);
+  }
+
+  destroy() {
+    return this.sessionStorage.destroySession(this.session);
+  }
+
+  flash(key: string, value: any) {
+    this.session.flash(key, value);
+  }
+
+  unset(key: string) {
+    this.session.unset(key);
+  }
+
+  set(key: string, value: any) {
+    this.session.set(key, value);
+  }
+
+  commit() {
+    return this.sessionStorage.commitSession(this.session);
   }
 }
