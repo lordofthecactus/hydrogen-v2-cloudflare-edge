@@ -27,6 +27,10 @@ npm start
 
 Then refresh the same URL in your browser (no live reload for production builds).
 
+## Setup your store
+
+Add your store environment variables to the `wrangler.toml` file. For production secret keys follow [cloudflare's guide](https://developers.cloudflare.com/workers/platform/environment-variables/#add-secrets-to-your-project)
+
 ## Deployment
 
 If you don't already have an account, then [create a cloudflare account here](https://dash.cloudflare.com/sign-up) and after verifying your email address with Cloudflare, go to your dashboard and set up your free custom Cloudflare Workers subdomain.
