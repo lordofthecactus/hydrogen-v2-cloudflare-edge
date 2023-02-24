@@ -1,5 +1,6 @@
-# Welcome to Remix!
+# Example Hydrogen v2 on Cloudflare edge
 
+- [Hydrogen Docs](https://shopify.dev/docs/custom-storefronts/hydrogen)
 - [Remix Docs](https://remix.run/docs)
 
 ## Development
