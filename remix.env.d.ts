@@ -14,6 +14,16 @@ declare global {
   /**
    * Declare expected Env parameter in fetch handler.
    */
+  const SESSION_SECRET: string;
+  const PUBLIC_STOREFRONT_API_TOKEN: string;
+  const PRIVATE_STOREFRONT_API_TOKEN: string;
+  const PUBLIC_STOREFRONT_API_VERSION: string;
+  const PUBLIC_STORE_DOMAIN: string;
+  const PUBLIC_STOREFRONT_ID: string;
+
+  /**
+   * Declare expected Env parameter in fetch handler.
+   */
   interface Env {
     SESSION_SECRET: string;
     PUBLIC_STOREFRONT_API_TOKEN: string;

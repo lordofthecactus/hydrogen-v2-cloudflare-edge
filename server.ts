@@ -9,6 +9,7 @@ import {
   getAssetFromKV,
 } from "@cloudflare/kv-asset-handler";
 import { createStorefrontClient } from "@shopify/hydrogen";
+import { getBuyerIp } from "@shopify/remix-oxygen";
 
 type RequestHandler = (event: FetchEvent) => Promise<Response>;
 
@@ -38,9 +39,9 @@ function createEventHandler({
      * Create Hydrogen's Storefront client.
      */
     const { storefront } = createStorefrontClient({
-      // cache,
+      // cache
       waitUntil,
-      // buyerIp: getBuyerIp(request),
+      buyerIp: getBuyerIp(event.request),
       i18n: { language: "EN", country: "US" },
       publicStorefrontToken: env.PUBLIC_STOREFRONT_API_TOKEN,
       // privateStorefrontToken: PRIVATE_STOREFRONT_API_TOKEN,
@@ -101,7 +102,7 @@ function createRequestHandler({
   };
 }
 
-export async function handleAsset(
+async function handleAsset(
   event: FetchEvent,
   build: ServerBuild,
   options?: Partial<KvAssetHandlerOptions>
