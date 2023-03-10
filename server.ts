@@ -1,25 +1,25 @@
-import * as build from "@remix-run/dev/server-build";
-import { createCookieSessionStorage, ServerBuild } from "@remix-run/cloudflare";
-import type { GetLoadContextFunction } from "@remix-run/cloudflare-workers";
+import * as build from '@remix-run/dev/server-build';
+import {createCookieSessionStorage, ServerBuild} from '@remix-run/cloudflare';
+import type {GetLoadContextFunction} from '@remix-run/cloudflare-workers';
 import {
   createRequestHandler as createRemixRequestHandler,
   Session,
   SessionStorage,
-} from "@remix-run/server-runtime";
-import type { Options as KvAssetHandlerOptions } from "@cloudflare/kv-asset-handler";
+} from '@remix-run/server-runtime';
+import type {Options as KvAssetHandlerOptions} from '@cloudflare/kv-asset-handler';
 import {
   MethodNotAllowedError,
   NotFoundError,
   getAssetFromKV,
-} from "@cloudflare/kv-asset-handler";
-import { createStorefrontClient } from "@shopify/hydrogen";
-import { getBuyerIp } from "@shopify/remix-oxygen";
+} from '@cloudflare/kv-asset-handler';
+import {createStorefrontClient} from '@shopify/hydrogen';
+import {getBuyerIp} from '@shopify/remix-oxygen';
 
 type RequestHandler = (event: FetchEvent) => Promise<Response>;
 
 addEventListener(
-  "fetch",
-  createEventHandler({ build, mode: process.env.NODE_ENV })
+  'fetch',
+  createEventHandler({build, mode: process.env.NODE_ENV}),
 );
 
 function createEventHandler({
@@ -36,45 +36,49 @@ function createEventHandler({
      * Open a cache instance in the worker and a custom session instance.
      */
     if (!SESSION_SECRET) {
-      throw new Error("SESSION_SECRET environment variable is not set");
+      throw new Error('SESSION_SECRET environment variable is not set');
     }
 
     const waitUntil = (p: Promise<any>) => event.waitUntil(p);
     const env = {
       PUBLIC_STOREFRONT_API_TOKEN,
       PRIVATE_STOREFRONT_API_TOKEN:
-        typeof PRIVATE_STOREFRONT_API_TOKEN !== "undefined"
+        typeof PRIVATE_STOREFRONT_API_TOKEN !== 'undefined'
           ? PRIVATE_STOREFRONT_API_TOKEN
           : undefined,
       PUBLIC_STORE_DOMAIN,
       PUBLIC_STOREFRONT_API_VERSION,
+      PUBLIC_STOREFRONT_ID:
+        typeof PUBLIC_STOREFRONT_ID !== 'undefined'
+          ? PUBLIC_STOREFRONT_ID
+          : undefined,
       SESSION_SECRET,
     };
 
     const [cache, session] = await Promise.all([
-      caches.open("hydrogen"),
+      caches.open('hydrogen'),
       HydrogenSession.init(event.request, [SESSION_SECRET]),
     ]);
 
     /**
      * Create Hydrogen's Storefront client.
      */
-    const { storefront } = createStorefrontClient({
+    const {storefront} = createStorefrontClient({
       // cache
       waitUntil,
       buyerIp: getBuyerIp(event.request),
-      i18n: { language: "EN", country: "US" },
+      i18n: {language: 'EN', country: 'US'},
       publicStorefrontToken: env.PUBLIC_STOREFRONT_API_TOKEN,
       privateStorefrontToken: env.PRIVATE_STOREFRONT_API_TOKEN,
       storeDomain: `https://${env.PUBLIC_STORE_DOMAIN}`,
-      storefrontApiVersion: env.PUBLIC_STOREFRONT_API_VERSION || "2023-01",
-      // storefrontId: PUBLIC_STOREFRONT_ID,
-      requestGroupId: event.request.headers.get("request-id"),
+      storefrontApiVersion: env.PUBLIC_STOREFRONT_API_VERSION || '2023-01',
+      storefrontId: env.PUBLIC_STOREFRONT_ID,
+      requestGroupId: event.request.headers.get('request-id'),
     });
 
     let handleRequest = createRequestHandler({
       build,
-      getLoadContext: () => ({ session, cache, storefront }),
+      getLoadContext: () => ({session, cache, storefront}),
       mode,
     });
 
@@ -91,16 +95,16 @@ function createEventHandler({
     try {
       event.respondWith(handleEvent(event));
     } catch (e: any) {
-      if (process.env.NODE_ENV === "development") {
+      if (process.env.NODE_ENV === 'development') {
         event.respondWith(
           new Response(e.message || e.toString(), {
             status: 500,
-          })
+          }),
         );
         return;
       }
 
-      event.respondWith(new Response("Internal Error", { status: 500 }));
+      event.respondWith(new Response('Internal Error', {status: 500}));
     }
   };
 }
@@ -126,10 +130,10 @@ function createRequestHandler({
 async function handleAsset(
   event: FetchEvent,
   build: ServerBuild,
-  options?: Partial<KvAssetHandlerOptions>
+  options?: Partial<KvAssetHandlerOptions>,
 ) {
   try {
-    if (process.env.NODE_ENV === "development") {
+    if (process.env.NODE_ENV === 'development') {
       return await getAssetFromKV(event, {
         cacheControl: {
           bypassCache: true,
@@ -140,8 +144,8 @@ async function handleAsset(
 
     let cacheControl = {};
     let url = new URL(event.request.url);
-    let assetpath = build.assets.url.split("/").slice(0, -1).join("/");
-    let requestpath = url.pathname.split("/").slice(0, -1).join("/");
+    let assetpath = build.assets.url.split('/').slice(0, -1).join('/');
+    let requestpath = url.pathname.split('/').slice(0, -1).join('/');
 
     if (requestpath.startsWith(assetpath)) {
       // Assets are hashed by Remix so are safe to cache in the browser
@@ -184,21 +188,21 @@ async function handleAsset(
 class HydrogenSession {
   constructor(
     private sessionStorage: SessionStorage,
-    private session: Session
+    private session: Session,
   ) {}
 
   static async init(request: Request, secrets: string[]) {
     const storage = createCookieSessionStorage({
       cookie: {
-        name: "session",
+        name: 'session',
         httpOnly: true,
-        path: "/",
-        sameSite: "lax",
+        path: '/',
+        sameSite: 'lax',
         secrets,
       },
     });
 
-    const session = await storage.getSession(request.headers.get("Cookie"));
+    const session = await storage.getSession(request.headers.get('Cookie'));
 
     return new this(storage, session);
   }

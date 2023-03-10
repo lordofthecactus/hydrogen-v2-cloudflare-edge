@@ -2,7 +2,7 @@ import {
   type LinksFunction,
   type MetaFunction,
   type LoaderArgs,
-} from "@shopify/remix-oxygen";
+} from '@shopify/remix-oxygen';
 import {
   Links,
   Meta,
@@ -10,40 +10,40 @@ import {
   Scripts,
   ScrollRestoration,
   useLoaderData,
-} from "@remix-run/react";
-import type { Shop } from "@shopify/hydrogen/storefront-api-types";
-import styles from "./styles/app.css";
-import favicon from "../public/favicon.svg";
+} from '@remix-run/react';
+import type {Shop} from '@shopify/hydrogen/storefront-api-types';
+import styles from './styles/app.css';
+import favicon from '../public/favicon.svg';
 
 export const links: LinksFunction = () => {
   return [
-    { rel: "stylesheet", href: styles },
+    {rel: 'stylesheet', href: styles},
     {
-      rel: "preconnect",
-      href: "https://cdn.shopify.com",
+      rel: 'preconnect',
+      href: 'https://cdn.shopify.com',
     },
     {
-      rel: "preconnect",
-      href: "https://shop.app",
+      rel: 'preconnect',
+      href: 'https://shop.app',
     },
-    { rel: "icon", type: "image/svg+xml", href: favicon },
+    {rel: 'icon', type: 'image/svg+xml', href: favicon},
   ];
 };
 
 export const meta: MetaFunction = () => ({
-  charset: "utf-8",
-  viewport: "width=device-width,initial-scale=1",
+  charset: 'utf-8',
+  viewport: 'width=device-width,initial-scale=1',
 });
 
-export async function loader({ context }: LoaderArgs) {
-  const layout = await context.storefront.query<{ shop: Shop }>(LAYOUT_QUERY);
-  return { layout };
+export async function loader({context}: LoaderArgs) {
+  const layout = await context.storefront.query<{shop: Shop}>(LAYOUT_QUERY);
+  return {layout};
 }
 
 export default function App() {
   const data = useLoaderData<typeof loader>();
 
-  const { name } = data.layout.shop;
+  const {name} = data.layout.shop;
 
   return (
     <html lang="en">

@@ -2,14 +2,14 @@
 /// <reference types="@remix-run/cloudflare" />
 /// <reference types="@cloudflare/workers-types" />
 
-import type { Storefront } from "@shopify/hydrogen";
+import type {Storefront} from '@shopify/hydrogen';
 // import type { HydrogenSession } from "../server";
 
 declare global {
   /**
    * A global `process` object is only available during build to access NODE_ENV.
    */
-  const process: { env: { NODE_ENV: "production" | "development" } };
+  const process: {env: {NODE_ENV: 'production' | 'development'}};
 
   /**
    * Declare expected Env parameter in fetch handler.
@@ -37,7 +37,7 @@ declare global {
 /**
  * Declare local additions to `AppLoadContext` to include the session utilities we injected in `server.ts`.
  */
-declare module "@shopify/remix-oxygen" {
+declare module '@shopify/remix-oxygen' {
   export interface AppLoadContext {
     // session: HydrogenSession;
     storefront: Storefront;
